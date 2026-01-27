@@ -160,8 +160,13 @@ SIMPLE_JWT = {
 
 CSRF_TRUSTED_ORIGINS = [
     "https://rentspace-production-2984.up.railway.app",
+    "https://*.up.railway.app",
 ]
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_DOMAIN = ".up.railway.app"
+SESSION_COOKIE_DOMAIN = ".up.railway.app"
+
 
