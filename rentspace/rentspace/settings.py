@@ -29,7 +29,11 @@ SECRET_KEY = 'django-insecure-y&vzk^ds&vuq9ls(-2pv5j*xsm6&qf#1z8t4ozk5g9#=12_3xy
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "rentspace-production-2984.up.railway.app",
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition
@@ -153,3 +157,9 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="https://rentspace-production-2984.up.railway.app",
+    cast=lambda v: [s.strip() for s in v.split(",")]
+)
