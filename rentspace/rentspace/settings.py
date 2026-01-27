@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from logging import config
+from decouple import config
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
