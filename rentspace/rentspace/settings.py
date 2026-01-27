@@ -158,8 +158,10 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="https://rentspace-production-2984.up.railway.app",
-    cast=lambda v: [s.strip() for s in v.split(",")]
-)
+CSRF_TRUSTED_ORIGINS = [
+    "https://rentspace-production-2984.up.railway.app",
+]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
