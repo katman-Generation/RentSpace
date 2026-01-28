@@ -166,7 +166,6 @@ SIMPLE_JWT = {
 
 CSRF_TRUSTED_ORIGINS = [
     "https://rentspace-production-2984.up.railway.app",
-    "https://*.up.railway.app",
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
