@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from .serializers import UserProfileSerializer, RegisterSerializer
 from django.contrib.auth.models import User
 from .models import UserProfile
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     serializer_class = UserProfileSerializer
 
     def get_object(self):
