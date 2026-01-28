@@ -3,6 +3,7 @@ from django.db.models import Q
 from rest_framework.generics import RetrieveAPIView
 from .models import Space, SpaceType, Location
 from .serializers import SpaceSerializer, SpaceImageSerializer, LocationSerializer, SpaceTypeSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class SpaceListView(generics.ListCreateAPIView):
@@ -43,6 +44,7 @@ class SpaceListView(generics.ListCreateAPIView):
 class SpaceCreateView(generics.CreateAPIView):
     queryset = Space.objects.all()
     serializer_class = SpaceSerializer
+    authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     
     def perform_create(self, serializer):
@@ -50,6 +52,7 @@ class SpaceCreateView(generics.CreateAPIView):
         
 class MySpacesView(generics.ListAPIView):
     serializer_class = SpaceSerializer
+    authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
@@ -74,6 +77,7 @@ class SpaceTypeListView(generics.ListAPIView):
 
 class SpaceUpdateView(generics.UpdateAPIView):
     serializer_class = SpaceSerializer
+    authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
