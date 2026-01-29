@@ -70,6 +70,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://rentspace-production-2984.up.railway.app",
+    "https://rentspace-frontend-git-main-tatendas-projects-68a6a961.vercel.app/",
 ]
 
 
@@ -166,6 +167,7 @@ SIMPLE_JWT = {
 
 CSRF_TRUSTED_ORIGINS = [
     "https://rentspace-production-2984.up.railway.app",
+    "https://rentspace-frontend-git-main-tatendas-projects-68a6a961.vercel.app/"
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
