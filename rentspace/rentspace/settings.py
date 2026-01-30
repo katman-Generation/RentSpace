@@ -70,7 +70,15 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://rentspace-production-2984.up.railway.app",
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://rentspace-frontend-.*\.vercel\.app$",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://rentspace-production-2984.up.railway.app",
+    "https://*.vercel.app",
 ]
 
 MEDIA_URL = '/media/'
@@ -163,11 +171,6 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://rentspace-production-2984.up.railway.app",
-    r"^https://rentspace-frontend-.*\.vercel\.app$",
-]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
