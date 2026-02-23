@@ -23,17 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y&vzk^ds&vuq9ls(-2pv5j*xsm6&qf#1z8t4ozk5g9#=12_3xy'
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 
-ALLOWED_HOSTS = [
-    "rentspace-production-2984.up.railway.app",
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")])
 
 
 # Application definition
@@ -69,16 +65,15 @@ MIDDLEWARE = [
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "https://rentspace-production-2984.up.railway.app",
+    "https://www.zimrentspace.com",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://rentspace-frontend-.*\.vercel\.app$",
+    "https://www.zimrentspace.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://rentspace-production-2984.up.railway.app",
-    "https://*.vercel.app",
+    "https://www.zimrentspace.com",
 ]
 
 MEDIA_URL = '/media/'
