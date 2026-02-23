@@ -66,6 +66,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://www.zimrentspace.com",
+    "https://rentspace-4r4c.onrender.com",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
