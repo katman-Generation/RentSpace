@@ -32,7 +32,7 @@ class SpaceSerializer(serializers.ModelSerializer):
     images = SpaceImageSerializer(many=True, read_only=True)
     owner = serializers.ReadOnlyField(source='owner.username')
     is_owner = serializers.SerializerMethodField()
-    owner_phone = serializers.ReadOnlyField(source='owner.userprofile.phone_number', read_only=True)
+    owner_phone = serializers.SerializerMethodField()
 
     # READ
     location = LocationSerializer(read_only=True)
@@ -68,9 +68,36 @@ class SpaceSerializer(serializers.ModelSerializer):
             'is_owner',
             'owner_phone',
         ]
+
     def get_is_owner(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return obj.owner == request.user
         return False
 
+    def get_owner_phone(self, obj):
+        request = self.context.get('request')
+        include_owner_phone = self.context.get('include_owner_phone', False)
+        if not include_owner_phone or not request or not request.user.is_authenticated:
+            return None
+
+        profile = getattr(obj.owner, "userprofile", None)
+        return profile.phone_number if profile else None
+
+    def _attach_images(self, space):
+        request = self.context.get("request")
+        if not request:
+            return
+
+        for uploaded_image in request.FILES.getlist("images"):
+            SpaceImage.objects.create(space=space, image=uploaded_image)
+
+    def create(self, validated_data):
+        space = super().create(validated_data)
+        self._attach_images(space)
+        return space
+
+    def update(self, instance, validated_data):
+        space = super().update(instance, validated_data)
+        self._attach_images(space)
+        return space

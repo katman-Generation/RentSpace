@@ -29,7 +29,19 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")])
+def csv_config(name, default=""):
+    return config(
+        name,
+        default=default,
+        cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
+    )
+
+
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="127.0.0.1,localhost",
+    cast=lambda v: [s.strip() for s in v.split(",")],
+)
 
 
 # Application definition
@@ -71,12 +83,27 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
-    "https://www.zimrentspace.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://www.zimrentspace.com",
 ]
+
+EXTRA_CORS_ORIGINS = csv_config("EXTRA_CORS_ORIGINS")
+EXTRA_CSRF_TRUSTED_ORIGINS = csv_config("EXTRA_CSRF_TRUSTED_ORIGINS")
+
+if DEBUG:
+    EXTRA_CORS_ORIGINS.extend([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ])
+    EXTRA_CSRF_TRUSTED_ORIGINS.extend([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ])
+
+CORS_ALLOWED_ORIGINS.extend(EXTRA_CORS_ORIGINS)
+CSRF_TRUSTED_ORIGINS.extend(EXTRA_CSRF_TRUSTED_ORIGINS)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -105,7 +132,9 @@ WSGI_APPLICATION = 'rentspace.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.parse(config("DATABASE_URL"))
+    'default': dj_database_url.parse(
+        config("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+    )
 }
 
 
@@ -155,11 +184,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/minute',
+        'user': '120/minute',
+        'auth': '10/minute',
+        'register': '5/minute',
+        'write': '30/minute',
+        'search': '120/minute',
+        'detail': '120/minute',
+        'meta': '60/minute',
+    },
 }
 
 
@@ -173,5 +217,5 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 USE_X_FORWARDED_HOST = True
 
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
