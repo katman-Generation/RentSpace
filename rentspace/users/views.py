@@ -1,9 +1,10 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .serializers import UserProfileSerializer, RegisterSerializer
 from django.contrib.auth.models import User
 from .models import UserProfile
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -20,11 +21,22 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "register"
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            print(serializer.errors)  # 👈 DEBUG
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
-        return Response(serializer.data, status=201)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+class LoginView(TokenObtainPairView):
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "auth"
+
+
+class RefreshView(TokenRefreshView):
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "auth"

@@ -2,13 +2,15 @@ from rest_framework import generics, permissions
 from django.db.models import Q
 from rest_framework.generics import RetrieveAPIView
 from .models import Space, SpaceType, Location
-from .serializers import SpaceSerializer, SpaceImageSerializer, LocationSerializer, SpaceTypeSerializer
+from .serializers import SpaceSerializer, LocationSerializer, SpaceTypeSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
-class SpaceListView(generics.ListCreateAPIView):
+class SpaceListView(generics.ListAPIView):
     queryset = Space.objects.filter(is_available=True)
     serializer_class = SpaceSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "search"
     
     def get_queryset(self):
         queryset = Space.objects.filter(is_available=True)
@@ -46,6 +48,7 @@ class SpaceCreateView(generics.CreateAPIView):
     serializer_class = SpaceSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "write"
     
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -61,24 +64,33 @@ class MySpacesView(generics.ListAPIView):
 class SpaceDetailView(RetrieveAPIView):
     queryset = Space.objects.all()
     serializer_class = SpaceSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "detail"
 
     def get_serializer_context(self):
-        return {"request": self.request}
+        context = super().get_serializer_context()
+        context["include_owner_phone"] = True
+        return context
 
     
 class LocationListView(generics.ListAPIView):
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "meta"
 
 
 class SpaceTypeListView(generics.ListAPIView):
     queryset = SpaceType.objects.all()
     serializer_class = SpaceTypeSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = "meta"
 
 class SpaceUpdateView(generics.UpdateAPIView):
     serializer_class = SpaceSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = "write"
 
     def get_queryset(self):
         return Space.objects.filter(owner=self.request.user)
