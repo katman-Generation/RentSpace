@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .serializers import UserProfileSerializer, RegisterSerializer
@@ -5,6 +6,7 @@ from django.contrib.auth.models import User
 from .models import UserProfile
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -18,6 +20,9 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         )
         return profile
 
+
+logger = logging.getLogger(__name__)
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -27,9 +32,32 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
+            logger.info(
+                "Register failed",
+                extra={
+                    "username": request.data.get("username"),
+                    "email": request.data.get("email"),
+                    "errors": serializer.errors,
+                },
+            )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        logger.info(
+            "Register succeeded",
+            extra={
+                "username": request.data.get("username"),
+                "email": request.data.get("email"),
+            },
+        )
+        return Response(
+            {
+                "user": serializer.data,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class LoginView(TokenObtainPairView):
