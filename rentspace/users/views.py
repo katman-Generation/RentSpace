@@ -1,12 +1,26 @@
 import logging
+
+from django.contrib.auth import get_user_model
+
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .serializers import UserProfileSerializer, RegisterSerializer
-from django.contrib.auth.models import User
-from .models import UserProfile
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
+from .models import UserProfile
+from .serializers import (
+    UserProfileSerializer,
+    RegisterSerializer,
+)
+
+
+User = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
@@ -21,8 +35,6 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return profile
 
 
-logger = logging.getLogger(__name__)
-
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -30,26 +42,35 @@ class RegisterView(generics.CreateAPIView):
     throttle_scope = "register"
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
         if not serializer.is_valid():
             logger.info(
                 "Register failed",
                 extra={
-                    "username": request.data.get("username"),
                     "email": request.data.get("email"),
                     "errors": serializer.errors,
                 },
             )
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         user = serializer.save()
+
         refresh = RefreshToken.for_user(user)
+
         logger.info(
             "Register succeeded",
             extra={
-                "username": request.data.get("username"),
-                "email": request.data.get("email"),
+                "email": user.email,
             },
         )
+
         return Response(
             {
                 "user": serializer.data,
