@@ -205,6 +205,7 @@ REST_FRAMEWORK = {
         'search': '120/minute',
         'detail': '120/minute',
         'meta': '60/minute',
+        'password_reset': '5/minute',
     },
 }
 
@@ -238,3 +239,28 @@ USE_X_FORWARDED_HOST = True
 
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
+
+FRONTEND_URL = config(
+    "FRONTEND_URL",
+    default="http://localhost:5173",
+)
+
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL",
+    default="noreply@zimrentspace.com",
+)
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+    EMAIL_HOST = config("EMAIL_HOST")
+    EMAIL_PORT = config("EMAIL_PORT", cast=int, default=587)
+    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+    
+GOOGLE_CLIENT_ID = config(
+    "GOOGLE_CLIENT_ID",
+    default=""
+)

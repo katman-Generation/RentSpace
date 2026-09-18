@@ -1,9 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils.http import urlsafe_base64_decode
+
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import UserProfile
+from django.contrib.auth.tokens import default_token_generator
 
 
 User = get_user_model()
@@ -39,6 +42,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
 
     phone_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
         validators=[
             UniqueValidator(
                 queryset=User.objects.all()
@@ -67,7 +73,47 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
-            phone_number=validated_data["phone_number"],
+            phone_number=validated_data.get("phone_number") or None,
         )
 
         return user
+    
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password],
+    )
+
+    def validate(self, attrs):
+        try:
+            uid = urlsafe_base64_decode(attrs["uid"]).decode()
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError(
+                {"detail": "Invalid or expired password reset link."}
+            )
+
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise serializers.ValidationError(
+                {"detail": "Invalid or expired password reset link."}
+            )
+
+        attrs["user"] = user
+        return attrs
+
+    def save(self):
+        user = self.validated_data["user"]
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+
+        return user
+class GoogleLoginSerializer(serializers.Serializer):
+    credential = serializers.CharField(
+        write_only=True
+    )
