@@ -38,6 +38,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
         unique=True
     )
+    google_id = models.CharField(
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True
+    )
 
     first_name = models.CharField(
         max_length=100
@@ -49,7 +55,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     phone_number = models.CharField(
         max_length=20,
-        unique=True
+        unique=True,
+        null=True,
+        blank=True
     )
 
     email_verified = models.BooleanField(
