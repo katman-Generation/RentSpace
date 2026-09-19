@@ -16,7 +16,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.ReadOnlyField(source="user.email")
     first_name = serializers.ReadOnlyField(source="user.first_name")
     last_name = serializers.ReadOnlyField(source="user.last_name")
-    phone_number = serializers.ReadOnlyField(source="user.phone_number")
+
+    phone_number = serializers.CharField(
+        source="user.phone_number",
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all()
+            )
+        ],
+    )
 
     class Meta:
         model = UserProfile
@@ -30,6 +41,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", {})
+
+        if "phone_number" in user_data:
+            instance.user.phone_number = (
+                user_data["phone_number"] or None
+            )
+            instance.user.save(
+                update_fields=["phone_number"]
+            )
+
+        return super().update(
+            instance,
+            validated_data
+        )
 
 
 class RegisterSerializer(serializers.ModelSerializer):
