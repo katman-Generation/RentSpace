@@ -133,6 +133,10 @@ WSGI_APPLICATION = 'rentspace.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Database
+# Local development → SQLite
+# Production → Supabase PostgreSQL
+
 DATABASES = {
     'default': dj_database_url.parse(
         config("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")

@@ -10,6 +10,7 @@ from .views import (
     CategoryListView,
     AmenityListView,
     SpaceUpdateView,
+    InstitutionListView,
 )
 
 
@@ -44,6 +45,10 @@ urlpatterns = [
     path(
         "categories/",
         CategoryListView.as_view()
+    ),
+    path(
+        "institutions/",
+        InstitutionListView.as_view()
     ),
 
     path(
