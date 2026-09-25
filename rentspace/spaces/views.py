@@ -10,6 +10,7 @@ from .models import (
     SpaceType,
     Amenity,
     Location,
+    Institution,
 )
 
 from .serializers import (
@@ -18,116 +19,260 @@ from .serializers import (
     SpaceTypeSerializer,
     AmenitySerializer,
     LocationSerializer,
+    InstitutionSerializer
 )
 
 
 class SpaceListView(generics.ListAPIView):
-    queryset = Space.objects.filter(is_available=True)
     serializer_class = SpaceSerializer
     permission_classes = [permissions.AllowAny]
     throttle_scope = "search"
 
     def get_queryset(self):
-        queryset = Space.objects.filter(
-            is_available=True
-        ).select_related(
-            "owner",
-            "category",
-            "space_type",
-            "location",
-        ).prefetch_related(
-            "amenities",
-            "images",
+        queryset = (
+            Space.objects
+            .filter(is_available=True)
+            .select_related(
+                "owner",
+                "category",
+                "space_type",
+                "location",
+                "student_details",
+                "student_details__institution",
+            )
+            .prefetch_related(
+                "amenities",
+                "images",
+            )
         )
 
-        city = self.request.query_params.get("city")
+        params = self.request.query_params
+
+        # --------------------------------------------------
+        # LOCATION
+        # --------------------------------------------------
+
+        city = params.get("city")
         if city:
             queryset = queryset.filter(
-                location__city__iexact=city
+                location__city__iexact=city.strip()
             )
 
-        area = self.request.query_params.get("area")
+        area = params.get("area")
         if area:
             queryset = queryset.filter(
-                location__area__iexact=area
+                location__area__iexact=area.strip()
             )
 
-        category = self.request.query_params.get("category")
+        province = params.get("province")
+        if province:
+            queryset = queryset.filter(
+                location__province__iexact=province.strip()
+            )
+
+        # --------------------------------------------------
+        # CATEGORY
+        # --------------------------------------------------
+
+        category = params.get("category")
         if category:
             queryset = queryset.filter(
-                category__name__iexact=category
+                category__slug__iexact=category.strip()
             )
 
-        space_type = self.request.query_params.get("space_type")
+        # --------------------------------------------------
+        # SPACE TYPE
+        # --------------------------------------------------
+
+        space_type = params.get("space_type")
         if space_type:
             queryset = queryset.filter(
-                space_type__name__iexact=space_type
+                space_type__name__iexact=space_type.strip()
             )
 
-        rental_period = self.request.query_params.get(
-            "rental_period"
-        )
+        # --------------------------------------------------
+        # LISTING PURPOSE
+        # rent / sale
+        # --------------------------------------------------
+
+        listing_purpose = params.get("listing_purpose")
+        if listing_purpose in {"rent", "sale"}:
+            queryset = queryset.filter(
+                listing_purpose=listing_purpose
+            )
+
+        # --------------------------------------------------
+        # RENTAL PERIOD
+        # --------------------------------------------------
+
+        rental_period = params.get("rental_period")
         if rental_period:
             queryset = queryset.filter(
-                rental_period=rental_period
+                rental_period=rental_period.strip()
             )
 
-        min_price = self.request.query_params.get(
-            "min_price"
-        )
-        max_price = self.request.query_params.get(
-            "max_price"
-        )
+        # --------------------------------------------------
+        # CURRENCY
+        # --------------------------------------------------
 
+        currency = params.get("currency")
+        if currency:
+            queryset = queryset.filter(
+                currency__iexact=currency.strip()
+            )
+
+        # --------------------------------------------------
+        # PRICE
+        # --------------------------------------------------
+
+        min_price = params.get("min_price")
         if min_price:
             queryset = queryset.filter(
                 price__gte=min_price
             )
 
+        max_price = params.get("max_price")
         if max_price:
             queryset = queryset.filter(
                 price__lte=max_price
             )
 
-        bedrooms = self.request.query_params.get(
-            "bedrooms"
-        )
+        # --------------------------------------------------
+        # BEDROOMS
+        # --------------------------------------------------
+
+        bedrooms = params.get("bedrooms")
         if bedrooms:
             queryset = queryset.filter(
                 bedrooms__gte=bedrooms
             )
 
-        bathrooms = self.request.query_params.get(
-            "bathrooms"
-        )
+        # --------------------------------------------------
+        # BATHROOMS
+        # --------------------------------------------------
+
+        bathrooms = params.get("bathrooms")
         if bathrooms:
             queryset = queryset.filter(
                 bathrooms__gte=bathrooms
             )
 
-        furnished = self.request.query_params.get(
-            "furnished"
-        )
+        # --------------------------------------------------
+        # FURNISHED
+        # --------------------------------------------------
+
+        furnished = params.get("furnished")
+
         if furnished is not None:
+            furnished_value = furnished.lower()
+
+            if furnished_value in {"true", "1", "yes"}:
+                queryset = queryset.filter(
+                    furnished=True
+                )
+
+            elif furnished_value in {"false", "0", "no"}:
+                queryset = queryset.filter(
+                    furnished=False
+                )
+
+        # --------------------------------------------------
+        # VERIFICATION
+        # --------------------------------------------------
+
+        verified = params.get("verified")
+
+        if verified is not None:
+            verified_value = verified.lower()
+
+            if verified_value in {"true", "1", "yes"}:
+                queryset = queryset.filter(
+                    verification_status="verified"
+                )
+
+            elif verified_value in {"false", "0", "no"}:
+                queryset = queryset.exclude(
+                    verification_status="verified"
+                )
+
+        # --------------------------------------------------
+        # AMENITIES
+        # Example:
+        # ?amenity=Wi-Fi
+        # --------------------------------------------------
+
+        amenity = params.get("amenity")
+
+        if amenity:
             queryset = queryset.filter(
-                furnished=furnished
+                amenities__name__iexact=amenity.strip()
             )
 
-        search = self.request.query_params.get(
-            "search"
-        )
+        # --------------------------------------------------
+        # STUDENT ACCOMMODATION
+        # --------------------------------------------------
+
+        institution = params.get("institution")
+
+        if institution:
+            queryset = queryset.filter(
+                student_details__institution__slug__iexact=(
+                    institution.strip()
+                )
+            )
+
+        room_type = params.get("room_type")
+
+        if room_type:
+            queryset = queryset.filter(
+                student_details__room_type=room_type.strip()
+            )
+
+        bathroom_type = params.get("bathroom_type")
+
+        if bathroom_type:
+            queryset = queryset.filter(
+                student_details__bathroom_type=(
+                    bathroom_type.strip()
+                )
+            )
+
+        meal_plan = params.get("meal_plan")
+
+        if meal_plan:
+            queryset = queryset.filter(
+                student_details__meal_plan=meal_plan.strip()
+            )
+
+        max_distance = params.get("max_distance")
+
+        if max_distance:
+            queryset = queryset.filter(
+                student_details__distance_to_campus_km__lte=(
+                    max_distance
+                )
+            )
+
+        # --------------------------------------------------
+        # SEARCH
+        # --------------------------------------------------
+
+        search = params.get("search")
 
         if search:
+            search = search.strip()
+
             queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(description__icontains=search) |
-                Q(location__city__icontains=search) |
-                Q(location__area__icontains=search) |
-                Q(category__name__icontains=search) |
-                Q(space_type__name__icontains=search)
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(location__city__icontains=search)
+                | Q(location__area__icontains=search)
+                | Q(location__province__icontains=search)
+                | Q(category__name__icontains=search)
+                | Q(space_type__name__icontains=search)
             )
 
-        return queryset
+        return queryset.distinct()
 
 
 class SpaceCreateView(generics.CreateAPIView):
@@ -149,27 +294,39 @@ class MySpacesView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Space.objects.filter(
-            owner=self.request.user
-        ).select_related(
-            "category",
-            "space_type",
-            "location",
-        ).prefetch_related(
-            "amenities",
-            "images",
+        return (
+            Space.objects
+            .filter(owner=self.request.user)
+            .select_related(
+                "category",
+                "space_type",
+                "location",
+                "student_details",
+                "student_details__institution",
+            )
+            .prefetch_related(
+                "amenities",
+                "images",
+            )
         )
 
 
 class SpaceDetailView(RetrieveAPIView):
-    queryset = Space.objects.all().select_related(
-        "owner",
-        "category",
-        "space_type",
-        "location",
-    ).prefetch_related(
-        "amenities",
-        "images",
+    queryset = (
+        Space.objects
+        .all()
+        .select_related(
+            "owner",
+            "category",
+            "space_type",
+            "location",
+            "student_details",
+            "student_details__institution",
+        )
+        .prefetch_related(
+            "amenities",
+            "images",
+        )
     )
 
     serializer_class = SpaceSerializer
@@ -211,9 +368,11 @@ class CategoryListView(generics.ListAPIView):
 
 
 class SpaceTypeListView(generics.ListAPIView):
-    queryset = SpaceType.objects.select_related(
-        "category"
-    ).all()
+    queryset = (
+        SpaceType.objects
+        .select_related("category")
+        .all()
+    )
 
     serializer_class = SpaceTypeSerializer
     permission_classes = [permissions.AllowAny]
@@ -225,3 +384,8 @@ class AmenityListView(generics.ListAPIView):
     serializer_class = AmenitySerializer
     permission_classes = [permissions.AllowAny]
     throttle_scope = "meta"
+    
+class InstitutionListView(generics.ListAPIView):
+    queryset = Institution.objects.all()
+    serializer_class = InstitutionSerializer
+    permission_classes = [permissions.AllowAny]
