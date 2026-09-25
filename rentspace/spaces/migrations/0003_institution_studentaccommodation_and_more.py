@@ -78,22 +78,16 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='category',
             name='slug',
-            field=models.SlugField(blank=True, max_length=100), 
+            field=models.SlugField(
+                blank=True,
+                max_length=100,
+                db_index=False,
+            ),
         ),
         
         migrations.RunPython(
             code=populate_category_slugs,
             reverse_code=migrations.RunPython.noop,
-        ),
-        
-        migrations.AlterField(
-            model_name='category',
-            name='slug',
-            field=models.SlugField(
-                blank=True,
-                max_length=100,
-                unique=True
-            ),
         ),
         
         migrations.AddField(
