@@ -1,10 +1,12 @@
 from django.core.management.base import BaseCommand
+from spaces.seed_data.locations_zimbabwe import LOCATION_DATA
 
 from spaces.models import (
     Category,
     SpaceType,
     Amenity,
     Institution,
+    Location,
 )
 
 
@@ -295,6 +297,44 @@ class Command(BaseCommand):
                     self.stdout.write(
                         f"Institution already exists: {institution.name}"
                     )
+        # --------------------------------------------------
+        # Locations
+        # --------------------------------------------------
+
+        self.stdout.write(
+            self.style.MIGRATE_HEADING(
+                "Seeding Zimbabwe locations..."
+            )
+        )
+
+        for location_data in LOCATION_DATA:
+
+            location, created = Location.objects.get_or_create(
+                province=location_data["province"],
+                city=location_data["city"],
+                area=location_data["area"],
+                defaults={
+                    "latitude": location_data.get("latitude"),
+                    "longitude": location_data.get("longitude"),
+                },
+            )
+
+            if created:
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Created location: "
+                        f"{location.province} / "
+                        f"{location.city} / "
+                        f"{location.area}"
+                    )
+                )
+            else:
+                self.stdout.write(
+                    f"Location already exists: "
+                    f"{location.province} / "
+                    f"{location.city} / "
+                    f"{location.area}"
+                )
 
         # --------------------------------------------------
         # Complete
