@@ -512,8 +512,8 @@ class DashboardView(generics.GenericAPIView):
 
         users_by_day = (
             User.objects
-            .filter(date_joined__gte=month_ago)
-            .annotate(day=TruncDate("date_joined"))
+            .filter(created_at__gte=month_ago)
+            .annotate(day=TruncDate("created_at"))
             .values("day")
             .annotate(count=Count("id"))
             .order_by("day")
