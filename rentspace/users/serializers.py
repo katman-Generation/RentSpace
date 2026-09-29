@@ -40,6 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "bio",
             "created_at",
             "updated_at",
+            "is_staff",
         ]
 
     def update(self, instance, validated_data):
