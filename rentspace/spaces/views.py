@@ -415,27 +415,29 @@ class DashboardView(generics.GenericAPIView):
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
 
-        # --------------------------------------------------
+        # ==================================================
         # USERS
-        # --------------------------------------------------
+        # User model uses date_joined
+        # ==================================================
 
         total_users = User.objects.count()
 
         new_users_today = User.objects.filter(
-            created_at__date=today
+            date_joined__date=today
         ).count()
 
         new_users_week = User.objects.filter(
-            created_at__gte=week_ago
+            date_joined__gte=week_ago
         ).count()
 
         new_users_month = User.objects.filter(
-            created_at__gte=month_ago
+            date_joined__gte=month_ago
         ).count()
 
-        # --------------------------------------------------
+        # ==================================================
         # SPACES
-        # --------------------------------------------------
+        # Space model uses created_at
+        # ==================================================
 
         total_spaces = Space.objects.count()
 
@@ -467,9 +469,9 @@ class DashboardView(generics.GenericAPIView):
             created_at__gte=month_ago
         ).count()
 
-        # --------------------------------------------------
+        # ==================================================
         # LISTING PURPOSE
-        # --------------------------------------------------
+        # ==================================================
 
         rent_spaces = Space.objects.filter(
             listing_purpose="rent"
@@ -479,26 +481,25 @@ class DashboardView(generics.GenericAPIView):
             listing_purpose="sale"
         ).count()
 
-        # --------------------------------------------------
+        # ==================================================
         # STUDENT ACCOMMODATION
-        # --------------------------------------------------
+        # ==================================================
 
         student_spaces = Space.objects.filter(
             student_details__isnull=False
         ).count()
 
-        # --------------------------------------------------
+        # ==================================================
         # LISTINGS BY CITY
-        # --------------------------------------------------
+        # ==================================================
 
-        listings_by_city = list(
+        listings_by_city = (
             Space.objects
             .values("location__city")
             .annotate(count=Count("id"))
             .order_by("-count")
         )
 
-        # Make the response easier for React to consume
         listings_by_city = [
             {
                 "city": item["location__city"],
@@ -507,14 +508,17 @@ class DashboardView(generics.GenericAPIView):
             for item in listings_by_city
         ]
 
-        # --------------------------------------------------
+        # ==================================================
         # USERS - LAST 30 DAYS
-        # --------------------------------------------------
+        # User model uses date_joined
+        # ==================================================
 
         users_by_day = (
             User.objects
-            .filter(created_at__gte=month_ago)
-            .annotate(day=TruncDate("created_at"))
+            .filter(date_joined__gte=month_ago)
+            .annotate(
+                day=TruncDate("date_joined")
+            )
             .values("day")
             .annotate(count=Count("id"))
             .order_by("day")
@@ -538,14 +542,17 @@ class DashboardView(generics.GenericAPIView):
                 ),
             })
 
-        # --------------------------------------------------
+        # ==================================================
         # SPACES - LAST 30 DAYS
-        # --------------------------------------------------
+        # Space model uses created_at
+        # ==================================================
 
         spaces_by_day = (
             Space.objects
             .filter(created_at__gte=month_ago)
-            .annotate(day=TruncDate("created_at"))
+            .annotate(
+                day=TruncDate("created_at")
+            )
             .values("day")
             .annotate(count=Count("id"))
             .order_by("day")
@@ -569,9 +576,9 @@ class DashboardView(generics.GenericAPIView):
                 ),
             })
 
-        # --------------------------------------------------
+        # ==================================================
         # RESPONSE
-        # --------------------------------------------------
+        # ==================================================
 
         return Response({
             "users": {
