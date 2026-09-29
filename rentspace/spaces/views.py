@@ -421,15 +421,15 @@ class DashboardView(generics.GenericAPIView):
         total_users = User.objects.count()
 
         new_users_today = User.objects.filter(
-            date_joined__date=today
+            created_at__date=today
         ).count()
 
         new_users_week = User.objects.filter(
-            date_joined__gte=week_ago
+            created_at__gte=week_ago
         ).count()
 
         new_users_month = User.objects.filter(
-            date_joined__gte=month_ago
+            created_at__gte=month_ago
         ).count()
 
         # --------------------------------------------------
