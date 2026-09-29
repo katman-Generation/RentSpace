@@ -11,10 +11,16 @@ from .views import (
     AmenityListView,
     SpaceUpdateView,
     InstitutionListView,
+    DashboardView,
 )
 
 
 urlpatterns = [
+    path(
+        "dashboard/",
+        DashboardView.as_view(),
+        name="dashboard"
+    ),
     path(
         "",
         SpaceListView.as_view(),

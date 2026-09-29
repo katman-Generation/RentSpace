@@ -1,6 +1,12 @@
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 
 from rest_framework import generics, permissions
+from rest_framework.response import Response
 from rest_framework.generics import RetrieveAPIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -389,3 +395,213 @@ class InstitutionListView(generics.ListAPIView):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer
     permission_classes = [permissions.AllowAny]
+    
+    
+class DashboardView(generics.GenericAPIView):
+    """
+    Founder/Admin dashboard statistics.
+    Only accessible to staff users.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        User = get_user_model()
+
+        now = timezone.now()
+        today = now.date()
+        week_ago = now - timedelta(days=7)
+        month_ago = now - timedelta(days=30)
+
+        # --------------------------------------------------
+        # USERS
+        # --------------------------------------------------
+
+        total_users = User.objects.count()
+
+        new_users_today = User.objects.filter(
+            date_joined__date=today
+        ).count()
+
+        new_users_week = User.objects.filter(
+            date_joined__gte=week_ago
+        ).count()
+
+        new_users_month = User.objects.filter(
+            date_joined__gte=month_ago
+        ).count()
+
+        # --------------------------------------------------
+        # SPACES
+        # --------------------------------------------------
+
+        total_spaces = Space.objects.count()
+
+        available_spaces = Space.objects.filter(
+            is_available=True
+        ).count()
+
+        unavailable_spaces = Space.objects.filter(
+            is_available=False
+        ).count()
+
+        verified_spaces = Space.objects.filter(
+            verification_status="verified"
+        ).count()
+
+        unverified_spaces = Space.objects.exclude(
+            verification_status="verified"
+        ).count()
+
+        new_spaces_today = Space.objects.filter(
+            created_at__date=today
+        ).count()
+
+        new_spaces_week = Space.objects.filter(
+            created_at__gte=week_ago
+        ).count()
+
+        new_spaces_month = Space.objects.filter(
+            created_at__gte=month_ago
+        ).count()
+
+        # --------------------------------------------------
+        # LISTING PURPOSE
+        # --------------------------------------------------
+
+        rent_spaces = Space.objects.filter(
+            listing_purpose="rent"
+        ).count()
+
+        sale_spaces = Space.objects.filter(
+            listing_purpose="sale"
+        ).count()
+
+        # --------------------------------------------------
+        # STUDENT ACCOMMODATION
+        # --------------------------------------------------
+
+        student_spaces = Space.objects.filter(
+            student_details__isnull=False
+        ).count()
+
+        # --------------------------------------------------
+        # LISTINGS BY CITY
+        # --------------------------------------------------
+
+        listings_by_city = list(
+            Space.objects
+            .values("location__city")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        # Make the response easier for React to consume
+        listings_by_city = [
+            {
+                "city": item["location__city"],
+                "count": item["count"],
+            }
+            for item in listings_by_city
+        ]
+
+        # --------------------------------------------------
+        # USERS - LAST 30 DAYS
+        # --------------------------------------------------
+
+        users_by_day = (
+            User.objects
+            .filter(date_joined__gte=month_ago)
+            .annotate(day=TruncDate("date_joined"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
+        users_by_day_dict = {
+            item["day"].isoformat(): item["count"]
+            for item in users_by_day
+        }
+
+        users_growth = []
+
+        for i in range(30):
+            day = today - timedelta(days=29 - i)
+
+            users_growth.append({
+                "date": day.isoformat(),
+                "count": users_by_day_dict.get(
+                    day.isoformat(),
+                    0
+                ),
+            })
+
+        # --------------------------------------------------
+        # SPACES - LAST 30 DAYS
+        # --------------------------------------------------
+
+        spaces_by_day = (
+            Space.objects
+            .filter(created_at__gte=month_ago)
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
+        spaces_by_day_dict = {
+            item["day"].isoformat(): item["count"]
+            for item in spaces_by_day
+        }
+
+        spaces_growth = []
+
+        for i in range(30):
+            day = today - timedelta(days=29 - i)
+
+            spaces_growth.append({
+                "date": day.isoformat(),
+                "count": spaces_by_day_dict.get(
+                    day.isoformat(),
+                    0
+                ),
+            })
+
+        # --------------------------------------------------
+        # RESPONSE
+        # --------------------------------------------------
+
+        return Response({
+            "users": {
+                "total": total_users,
+                "today": new_users_today,
+                "this_week": new_users_week,
+                "this_month": new_users_month,
+            },
+
+            "spaces": {
+                "total": total_spaces,
+                "available": available_spaces,
+                "unavailable": unavailable_spaces,
+                "verified": verified_spaces,
+                "unverified": unverified_spaces,
+                "today": new_spaces_today,
+                "this_week": new_spaces_week,
+                "this_month": new_spaces_month,
+            },
+
+            "listing_purpose": {
+                "rent": rent_spaces,
+                "sale": sale_spaces,
+            },
+
+            "student_accommodation": student_spaces,
+
+            "listings_by_city": listings_by_city,
+
+            "growth": {
+                "users": users_growth,
+                "spaces": spaces_growth,
+            },
+        })
