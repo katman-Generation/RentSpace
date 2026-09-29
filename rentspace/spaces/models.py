@@ -2,6 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
+from rentspace.storage_backends import SupabaseStorage
+
 
 # ============================================================
 # LOCATION
@@ -537,7 +539,8 @@ class SpaceImage(models.Model):
     )
 
     image = models.ImageField(
-        upload_to="space_images/"
+        upload_to="space_images/",
+        storage=SupabaseStorage(),
     )
 
     created_at = models.DateTimeField(

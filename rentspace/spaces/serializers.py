@@ -123,12 +123,10 @@ class SpaceImageSerializer(serializers.ModelSerializer):
 
         request = self.context.get("request")
 
-        if request and obj.image:
-            return request.build_absolute_uri(
-                obj.image.url
-            )
+        if obj.image:
+            return obj.image.url
 
-        return obj.image.url if obj.image else None
+        return None
 
 
 # ============================================================
