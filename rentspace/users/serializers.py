@@ -28,6 +28,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             )
         ],
     )
+    is_staff = serializers.ReadOnlyField(source="user.is_staff")
 
     class Meta:
         model = UserProfile
