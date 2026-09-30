@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from .models import Conversation, Message
-from users.models import User
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -63,8 +62,11 @@ class ConversationSerializer(serializers.ModelSerializer):
         source="space.id"
     )
 
+    unread_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Conversation
+
         fields = [
             "id",
             "space_id",
@@ -79,6 +81,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
 
+            "unread_count",
             "messages",
         ]
 
@@ -92,6 +95,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             "owner_name",
             "created_at",
             "updated_at",
+            "unread_count",
             "messages",
         ]
 
@@ -106,6 +110,18 @@ class ConversationSerializer(serializers.ModelSerializer):
             f"{obj.owner.first_name} "
             f"{obj.owner.last_name}"
         ).strip()
+
+    def get_unread_count(self, obj):
+        request = self.context.get("request")
+
+        if not request or not request.user.is_authenticated:
+            return 0
+
+        return obj.messages.filter(
+            is_read=False
+        ).exclude(
+            sender=request.user
+        ).count()
 
 
 class CreateConversationSerializer(serializers.ModelSerializer):

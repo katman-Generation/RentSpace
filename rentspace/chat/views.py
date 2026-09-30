@@ -1,9 +1,12 @@
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import Conversation, Message
+
 from .serializers import (
     ConversationSerializer,
     CreateConversationSerializer,
@@ -132,3 +135,86 @@ class MessageReadView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         serializer.save(is_read=True)
+
+
+class ConversationReadView(APIView):
+    """
+    Mark all unread incoming messages in a conversation
+    as read.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, conversation_id):
+        conversation = get_object_or_404(
+            Conversation,
+            pk=conversation_id,
+        )
+
+        if (
+            conversation.renter != request.user
+            and conversation.owner != request.user
+        ):
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(
+                "You are not a participant in this conversation."
+            )
+
+        updated_count = (
+            conversation.messages
+            .filter(
+                is_read=False
+            )
+            .exclude(
+                sender=request.user
+            )
+            .update(
+                is_read=True
+            )
+        )
+
+        return Response({
+            "success": True,
+            "marked_read": updated_count,
+        })
+
+
+class UnreadMessageCountView(APIView):
+    """
+    Return the total number of unread incoming messages
+    for the authenticated user.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        unread_count = (
+            Message.objects
+            .filter(
+                conversation__renter=request.user,
+                is_read=False,
+            )
+            .exclude(
+                sender=request.user
+            )
+            .count()
+        )
+
+        unread_count += (
+            Message.objects
+            .filter(
+                conversation__owner=request.user,
+                is_read=False,
+            )
+            .exclude(
+                sender=request.user
+            )
+            .count()
+        )
+
+        return Response({
+            "unread_count": unread_count,
+        })

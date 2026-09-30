@@ -5,6 +5,8 @@ from .views import (
     ConversationDetailView,
     MessageCreateView,
     MessageReadView,
+    ConversationReadView,
+    UnreadMessageCountView,
 )
 
 
@@ -28,8 +30,20 @@ urlpatterns = [
     ),
 
     path(
+        "conversations/<int:conversation_id>/read/",
+        ConversationReadView.as_view(),
+        name="conversation-read",
+    ),
+
+    path(
         "messages/<int:pk>/read/",
         MessageReadView.as_view(),
         name="message-read",
+    ),
+
+    path(
+        "unread-count/",
+        UnreadMessageCountView.as_view(),
+        name="unread-message-count",
     ),
 ]
