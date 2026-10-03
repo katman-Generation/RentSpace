@@ -559,3 +559,4 @@ LOCATION_DATA = [
 
     # Gwanda
     {"province": 'Matabeleland South', "city": 'Gwanda', "area": 'Colleen Bawn'},
+]
